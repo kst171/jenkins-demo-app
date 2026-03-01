@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        jdk 'JDK-9.0.4'
+        jdk 'jdk17'
     }
 
     environment {
@@ -14,7 +14,8 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/kst171/jenkins-demo-app.git'
+                    credentialsId: 'git-ssh-key',
+                    url: 'git@github.com:your-org/gradle-junit-demo.git'
             }
         }
 
@@ -23,32 +24,15 @@ pipeline {
                 sh './gradlew clean build'
             }
         }
-
-        stage('Test') {
-            steps {
-                sh './gradlew test'
-            }
-        }
-
-        stage('Archive Artifacts') {
-            steps {
-                archiveArtifacts artifacts: 'build/libs/*.jar', fingerprint: true
-            }
-        }
     }
 
     post {
         always {
-        junit 'build/test-results/test/*.xml'
+            junit allowEmptyResults: false,
+                  testResults: 'build/test-results/test/*.xml'
 
-        publishHTML(target: [
-            allowMissing: false,
-            alwaysLinkToLastBuild: true,
-            keepAll: true,
-            reportDir: 'build/reports/tests/test',
-            reportFiles: 'index.html',
-            reportName: 'JUnit HTML Report'
-            ])
+            archiveArtifacts artifacts: 'build/libs/*.jar',
+                             fingerprint: true
         }
 
         success {
